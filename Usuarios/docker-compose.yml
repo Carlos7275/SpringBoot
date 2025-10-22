@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: pruebas
+      MONGO_INITDB_ROOT_PASSWORD: 1]4&(N,GJo1m
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:8.2
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # puerto de comunicación con apps
+      - "15672:15672" # puerto web de administración
+    environment:
+      RABBITMQ_DEFAULT_USER: pruebasrabbitMQ
+      RABBITMQ_DEFAULT_PASS: FZ9RCz%81^2G
+
+volumes:
+  mongo_data:
