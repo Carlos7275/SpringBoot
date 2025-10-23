@@ -1,5 +1,7 @@
 package com.api.usuarios.models.Dto.Usuarios;
 
+import java.io.Serializable;
+
 import com.api.usuarios.annotations.ExistId;
 import com.api.usuarios.annotations.UniqueField;
 import com.api.usuarios.services.RolesService;
@@ -16,7 +18,9 @@ import lombok.Data;
  * DTO principal para registrar un nuevo usuario junto con su detalle.
  */
 @Data
-public class RegistroUsuarioDTO {
+public class RegistroUsuarioDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @NotBlank(message = "El nombre de usuario es obligatorio")
     @Size(min = 3, max = 30, message = "El nombre de usuario debe tener entre 3 y 30 caracteres")

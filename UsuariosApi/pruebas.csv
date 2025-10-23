@@ -1,0 +1,6 @@
+username,correo,password,id_rol,nombres,apellidos,telefono,id_pais,fechaNacimiento,id_genero
+Carlos72751,sandoval.carlos@example.com,123456,68f95730f425d8a889358f6f,Carlos Fernando,Sandoval Lizarraga,6682566496,68f95730f425d8a889358f73,2001-02-14,68f95730f425d8a889358f71
+MariaGomez,maria.gomez@example.com,abcdef,68f95730f425d8a889358f6f,Maria,Gomez,6681234567,68f95730f425d8a889358f73,1995-06-20,68f95730f425d8a889358f71
+JuanPerez,juan.perez@example.com,pass123,68f95730f425d8a889358f6f,Juan,Perez,6689876543,68f95730f425d8a889358f73,1990-12-05,68f95730f425d8a889358f71
+AnaLopez,ana.lopez@example.com,password,68f95730f425d8a889358f6f,Ana,Lopez,6687654321,68f95730f425d8a889358f73,2003-03-15,68f95730f425d8a889358f71
+LuisMartinez,luis.martinez@example.com,securepwd,68f95730f425d8a889358f6f,Luis,Martínez,6689988776,68f95730f425d8a889358f73,1998-09-09,68f95730f425d8a889358f71
