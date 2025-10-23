@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,6 +41,7 @@ import com.api.usuarios.entities.usuarios.UsuarioDetalle;
 import com.api.usuarios.entities.usuarios.Usuarios;
 import com.api.usuarios.enums.RolesEnum;
 import com.api.usuarios.models.Dto.Usuarios.ActualizarUsuarioDTO;
+import com.api.usuarios.models.Dto.Usuarios.CambiarPasswordDTO;
 import com.api.usuarios.models.Dto.Usuarios.RegistroUsuarioDTO;
 import com.api.usuarios.models.Dto.Usuarios.UsuarioDetalleDTO;
 import com.api.usuarios.models.Dto.Usuarios.UsuariosDTO;
@@ -124,6 +126,7 @@ public class UsuariosController {
 
     @PutMapping("modificar/{id}")
     @SecuredEndpoint
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> modificarUsuario(
             @PathVariable String id,
             @Valid @RequestBody ActualizarUsuarioDTO dto,
@@ -170,6 +173,7 @@ public class UsuariosController {
 
     @GetMapping("/listado")
     @SecuredEndpoint
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Listado de usuarios", description = "Obtiene un listado de usuarios con paginación, búsqueda y ordenamiento")
     public ResponseEntity<?> listado(
             @Parameter(description = "Número de página (default 1)", schema = @Schema(defaultValue = "1")) @RequestParam(defaultValue = "1") int page,
@@ -202,7 +206,7 @@ public class UsuariosController {
         PaginateResult<UsuariosDTO> dtoResult = new PaginateResult<>(dtoList, result.total());
 
         return ResponseEntity.ok(
-                ResponseUtil.Response("Operación Exitosa", dtoResult));
+                ResponseUtil.Response("Operación Exitosa", dtoResult.data()));
     }
 
     @DeleteMapping("eliminar/{id}")
@@ -218,24 +222,31 @@ public class UsuariosController {
     }
 
     @PostMapping(value = "/importar-usuarios", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @SecuredEndpoint
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<?> importarUsuarios(@RequestParam MultipartFile file,
             @AuthenticationPrincipal Usuarios usuarioLogueado) {
-
         if (file.isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(ResponseUtil.Response("El archivo CSV está vacío"));
         }
 
         boolean esAdmin = usuarioLogueado != null &&
-                "ADMIN".equals(usuarioLogueado.getRol().getDescripcion());
+                "ADMIN".equalsIgnoreCase(usuarioLogueado.getRol().getDescripcion());
 
         List<RegistroUsuarioDTO> listaUsuarios = new ArrayList<>();
         List<String> errores = new ArrayList<>();
         int filasProcesadas = 0;
 
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
-                CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+
+            CSVParser csvParser = CSVFormat.DEFAULT
+                    .builder()
+                    .setHeader() // usa la primera fila como encabezado
+                    .setSkipHeaderRecord(true)
+                    .build()
+                    .parse(reader);
 
             for (CSVRecord record : csvParser) {
                 filasProcesadas++;
@@ -248,9 +259,11 @@ public class UsuariosController {
                     UsuarioDetalleDTO detalle = new UsuarioDetalleDTO();
                     detalle.setNombres(fila.get("nombres"));
                     detalle.setApellidos(fila.get("apellidos"));
-                    detalle.setFoto(null);
+                    detalle.setFoto(null); // la foto se maneja en el consumer
                     dto.setDetalle(detalle);
 
+                    // Si no es admin o el rol no está especificado, el consumer lo asigna por
+                    // defecto
                     if (!esAdmin || dto.getId_rol() == null) {
                         dto.setId_rol(null);
                     }
@@ -262,7 +275,7 @@ public class UsuariosController {
                 }
             }
 
-            // Enviar todo el lote como un JSON
+            // Enviar todo el lote como JSON al RabbitMQ
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(listaUsuarios);
             _rabbitService.enviarMensaje(QUEUE_USUARIOS, json);
@@ -272,6 +285,7 @@ public class UsuariosController {
                     .body(ResponseUtil.Response("Error procesando CSV: " + e.getMessage()));
         }
 
+        // Construir respuesta
         Map<String, Object> resultado = new HashMap<>();
         resultado.put("filasProcesadas", filasProcesadas);
         resultado.put("filasEnviadas", listaUsuarios.size());
@@ -280,9 +294,15 @@ public class UsuariosController {
         return ResponseEntity.ok(ResponseUtil.Response("Importación finalizada", resultado));
     }
 
-    @PutMapping("cambiar-password/{id}")
-    public ResponseEntity<?> cambiarPassword(@PathVariable String id, @RequestBody String entity) {
-        return null;
+    @PutMapping("cambiar-password")
+    @SecuredEndpoint
+    public ResponseEntity<?> cambiarPassword(
+        @Valid @RequestBody CambiarPasswordDTO dto,
+        @AuthenticationPrincipal Usuarios usuarioLogueado) {
+
+        _usuarioService.CambiarPassword(usuarioLogueado, dto);
+        
+        return ResponseEntity.ok(ResponseUtil.Response("¡Operacion exitosa!", "¡Se cambio la contraseña con exito!"));
     }
 
 }
