@@ -57,7 +57,7 @@ public class GenerosController {
     public ResponseEntity<?> obtenerGeneros() throws JsonMappingException, JsonProcessingException {
         String cacheKey = "generosTodos";
 
-        // 1️⃣ Intentar obtener desde cache
+        //  Intentar obtener desde cache
         String cachedJson = (String) _redisService.get(cacheKey);
         if (cachedJson != null) {
             List<Generos> generos = Arrays.asList(
@@ -70,10 +70,10 @@ public class GenerosController {
                     ResponseUtil.Response("Operación Exitosa", generos));
         }
 
-        // 2️⃣ Obtener desde la base de datos
+        //  Obtener desde la base de datos
         List<Generos> generos = _generosService.findAll();
 
-        // 3️⃣ Guardar en cache como JSON
+        //  Guardar en cache como JSON
         String jsonToCache = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
